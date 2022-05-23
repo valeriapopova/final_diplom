@@ -63,8 +63,10 @@
  `docker-compose up -d`
 
 **Приложение доступно по адресу:**
-http://127.0.0.1:8000/`
+
+http://127.0.0.1:8000/
 
 **API опубликовано на сервере POSTMAN:**
+
 https://www.postman.com/martian-equinox-522243/workspace/api/collection/20850481-1460aa80-21e1-4589-afb6-e643ccc1d3ae?action=share&creator=20850481
 
