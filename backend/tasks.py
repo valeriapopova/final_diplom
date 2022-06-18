@@ -82,14 +82,14 @@ def open_file(shop_data):
 
 
 @celery_app.task()
-def do_import_task(partner, data):
+def do_import_task(partner_id, data):
     """
     Импорт прайса от поставщика
     """
 
     file = open_file(data)
 
-    shop, _ = Shop.objects.get_or_create(name=file['shop'], user_id=partner)
+    shop, _ = Shop.objects.get_or_create(name=file['shop'], user_id=partner_id)
 
     for category in data['categories']:
         category_object, _ = Category.objects.get_or_create(id=category['id'], name=category['name'])
