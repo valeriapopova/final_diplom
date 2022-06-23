@@ -1,7 +1,10 @@
-import yaml
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
+
+from requests import get
+from yaml import load as load_yaml, Loader
 from my_diplom.celery import celery_app
 from .models import User, Shop, Category, Product, ProductInfo, Parameter, \
     ProductParameter, ConfirmEmailToken
@@ -75,21 +78,30 @@ def new_order_task(user_id, **kwargs):
     msg.send()
 
 
-def open_file(shop_data):
-    with open(shop_data.get_file(), 'r') as f:
-        data = yaml.safe_load(f)
-    return data
+# def open_file(shop_data):
+#     with open(shop_data.get_file(), 'r') as f:
+#         data = yaml.safe_load(f)
+#     return data
 
 
 @celery_app.task()
-def do_import_task(partner_id, data):
+def do_import_task(partner_id, url):
     """
     Импорт прайса от поставщика
     """
+    # if url:
+    #     validate_url = URLValidator()
+    #     try:
+    #         validate_url(url)  # print("Url is valid")
+    #     except ValidationError as e:
+    #         return {'Status': False, 'Error': str(e)}
+    #     else:
+    stream = get(url).content
 
-    file = open_file(data)
-
-    shop, _ = Shop.objects.get_or_create(name=file['shop'], user_id=partner_id)
+    data = load_yaml(stream, Loader=Loader)
+    # file = open_file(data)
+    # print(file)
+    shop, _ = Shop.objects.get_or_create(name=data['shop'], user_id=partner_id)
 
     for category in data['categories']:
         category_object, _ = Category.objects.get_or_create(id=category['id'], name=category['name'])

@@ -1,6 +1,8 @@
 from distutils.util import strtobool
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 from django.db import IntegrityError
 from django.db.models import Q, Sum, F
@@ -309,14 +311,19 @@ class PartnerUpdate(APIView):
         if request.user.type != 'shop':
             return JsonResponse({'Status': False, 'Error': 'Только для магазинов'}, status=403)
 
-        data = request.data
+        url = request.data.get('url')
+        partner = request.user.id
+        if url:
+            validate_url = URLValidator()
+            try:
+                validate_url(url)
+            except ValidationError as e:
+                return JsonResponse({'Status': False, 'Error': str(e)})
+            else:
+                do_import_task.delay(partner, url)
+                return JsonResponse({'Status': True})
 
-        if data:
-            partner = request.user.id
-            do_import_task.delay(partner, data)
-            return Response({'Status': True})
-
-        return Response({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+        return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
 
 
             # data = request.data.get('url')

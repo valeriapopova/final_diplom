@@ -91,10 +91,11 @@ class ApiTests(APITestCase):
         url = reverse('backend:partner-update')
         token = Token.objects.create(user=user).key
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
-        with open('backend/shop1.yaml') as f:
-            updated_data = {'partner': user.id}
-            response = self.client.post(url, updated_data, files={'shop1.yaml': f}, format='json')
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # with open('backend/shop1.yaml') as f:
+        updated_data = {'partner': user.id,
+                        'url': 'https://raw.githubusercontent.com/netology-code/pd-diplom/master/data/shop1.yaml'}
+        response = self.client.post(url, updated_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_get_partner_state(self):
         self.test_partner_update()
