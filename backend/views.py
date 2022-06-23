@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.db import IntegrityError
 from django.db.models import Q, Sum, F
 from django.http import JsonResponse
+from django.views.generic import TemplateView
 from rest_framework import viewsets
 
 from rest_framework.authtoken.models import Token
@@ -524,3 +525,7 @@ class OrderView(APIView):
                         return JsonResponse({'Status': True})
 
         return JsonResponse({'Status': False, 'Errors': 'Не указаны все необходимые аргументы'})
+
+
+class Home(TemplateView):
+    template_name = 'backend/home.html'

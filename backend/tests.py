@@ -1,4 +1,6 @@
 import os
+
+import yaml
 from django.test import TestCase
 from rest_framework.authtoken.models import Token
 from .models import Shop, ProductInfo, Order, User, Contact, ConfirmEmailToken
@@ -9,15 +11,17 @@ from rest_framework import status
 
 class ApiTests(APITestCase):
     def login_user(self):
-        user = User.objects.create_user(
+        user = User.objects.create(
             first_name='Test',
             last_name='Testov',
             email='test99@test.com',
             password='dgdfhjfhdbhsfjdf777',
             company='macdocknack',
-            position='manager'
+            position='manager',
+            type='buyer',
+            is_active=True
         )
-        token = Token.objects.create(user=user).key
+        token = Token.objects.get_or_create(user_id=user.id)[0].key
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
 
     def test_register_account(self):
@@ -69,37 +73,50 @@ class ApiTests(APITestCase):
         url = reverse('backend:user-contact')
         token = Token.objects.create(user=user).key
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
-        data = {'city': 'SaintP', 'street': 'NEW', 'phone': '123456789'}
+        data = {'city': 'msk', 'street': 'pokrovka', 'phone': '+7123456789'}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json()['street'], data['street'])
 
     def test_partner_update(self):
         user = User.objects.create_user(
             first_name='Test',
             last_name='Testov',
-            email='test99@test.com',
+            email='test9@test.com',
             password='dgdfhjfhdbhsfjdf777',
             company='macdocknack',
             position='manager',
+            type='shop',
             is_active=True
         )
-        token = Token.objects.create(user=user).key
         url = reverse('backend:partner-update')
-        updated_data = {'partner': user.id, 'data': shop1.yaml}
+        token = Token.objects.create(user=user).key
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
-        response = self.client.post(url, updated_data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        with open('backend/shop1.yaml') as f:
+            updated_data = {'partner': user.id}
+            response = self.client.post(url, updated_data, files={'shop1.yaml': f}, format='json')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_partner_state(self):
+    def test_get_partner_state(self):
         self.test_partner_update()
         url = reverse('backend:partner-state')
-        response = self.client.post(url, data={'state': 'True'})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotIn('Errors', response.data)
-        self.assertIn('Status', response.data)
-        self.assertEqual(response.data['Status'], True)
-        self.assertIn('state', response.data)
+        self.assertIn('Status', response.json())
+        self.assertEqual(response.json['Status'], True)
+        for item in response.json['data']:
+            self.assertIn('url', item)
+            self.assertIn('id', item)
+            self.assertIn('name', item)
+            self.assertIn('state', item)
+
+    def test_update_partner_state(self):
+        self.test_partner_update()
+        url = reverse('backend:partner-state')
+        response = self.client.post(url, data={'state': 'on'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn('Errors', response.json())
+        self.assertIn('Status', response.json())
+        self.assertEqual(response.json()['Status'], True)
 
     def test_get_account_details(self):
         url = reverse('backend:user-details')
@@ -161,9 +178,9 @@ class ApiTests(APITestCase):
         self.test_partner_update()
         url = reverse('backend:basket')
         user = User.objects.get(email='test99@test.com')
-        id = ProductInfo.objects.first().id
+        id_ = 1
         quantity = 2
-        response = self.client.put(url, data={'product_info': id, 'quantity': quantity})
+        response = self.client.put(url, items={'product_info': id_, 'quantity': quantity})
         self.assertTrue(Order.objects.filter(user_id=user.id, state='basket').exists())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn('Errors', response.data)
@@ -171,7 +188,6 @@ class ApiTests(APITestCase):
         self.assertEqual(response.data['Status'], True)
 
     def test_basket(self):
-        self.login_user()
         self.test_add_to_basket()
         url = reverse('backend:basket')
         response = self.client.get(url)
