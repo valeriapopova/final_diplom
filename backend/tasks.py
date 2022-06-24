@@ -1,7 +1,8 @@
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 from requests import get
 from yaml import load as load_yaml, Loader
@@ -90,15 +91,16 @@ def do_import_task(partner_id, url):
     Импорт прайса от поставщика
     """
     # if url:
-    #     validate_url = URLValidator()
-    #     try:
-    #         validate_url(url)  # print("Url is valid")
-    #     except ValidationError as e:
-    #         return {'Status': False, 'Error': str(e)}
-    #     else:
+    # validate_url = URLValidator()
+    # try:
+    #     validate_url(url)
+    # except ValidationError as e:
+    #     return {'Status': False, 'Error': str(e)}
+    # else:
     stream = get(url).content
 
     data = load_yaml(stream, Loader=Loader)
+    print(data)
     # file = open_file(data)
     # print(file)
     shop, _ = Shop.objects.get_or_create(name=data['shop'], user_id=partner_id)

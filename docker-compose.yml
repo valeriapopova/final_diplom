@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 
 services:
   django:
@@ -10,11 +10,12 @@ services:
       - "8000:8000"
     depends_on:
       - pgdb
-      - redis
+#       - redis
+#       - celery
     restart: always
 
   pgdb:
-    image: postgres:14-alpine
+    image: postgres
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data/
@@ -27,11 +28,8 @@ services:
     build: .
     restart: always
     command: celery -A my_diplom worker -l info
-    volumes:
-      - ./:/usr/src/app/
     depends_on:
       - redis
-      - django
 
   redis:
     image: redis
@@ -40,4 +38,4 @@ services:
       - "6379:6379"
 
 volumes:
-   postgres_data: null
+   postgres_data:
